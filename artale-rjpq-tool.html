@@ -854,6 +854,9 @@
                     removeUserMarkers(user.nick);
                     delete connections[conn.peer];
                     refreshParticipantList();
+                    if (isHost) {
+                        broadcast({ type: 'NICK_LIST', users: getFullNickList() });
+                    }
                 }
             });
             conn.on('error', (err) => {
