@@ -211,9 +211,17 @@
             white-space: nowrap;
         }
 
-        .ms-btn:hover:not(:disabled) {
-            background: var(--ms-btn-hover-gradient);
-            border-color: #775500;
+        /* 只有在支援滑鼠懸停的裝置上才啟用 hover 特效，避免手機點擊後卡住 */
+        @media (hover: hover) {
+            .ms-btn:hover:not(:disabled) {
+                background: var(--ms-btn-hover-gradient);
+                border-color: #775500;
+            }
+
+            .door:hover {
+                border-color: #333;
+                background: #fff;
+            }
         }
 
         .ms-btn:active:not(:disabled) {
@@ -330,11 +338,6 @@
             align-items: center;
             transition: all 0.1s;
             position: relative;
-        }
-
-        .door:hover {
-            border-color: #333;
-            background: #fff;
         }
 
         .door:active {
