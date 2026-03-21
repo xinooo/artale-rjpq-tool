@@ -485,6 +485,7 @@
                     <div class="music-controls">
                         <button class="ms-btn" id="btn-play-pause" onclick="toggleMusic()" style="font-size: 10px; padding: 4px 8px;">暫停</button>
                         <div class="music-info" id="music-title">正在播放: 納希沙漠 - 瑪迦迪亞城</div>
+                        <button class="ms-btn" id="btn-mute" onclick="toggleMute()" style="font-size: 10px; padding: 4px 8px;">🔊 靜音</button>
                     </div>
                 </div>
 
@@ -579,7 +580,8 @@
             audio: document.getElementById('keep-alive-audio'),
             musicPanel: document.getElementById('music-player-panel'),
             musicTitle: document.getElementById('music-title'),
-            playBtn: document.getElementById('btn-play-pause')
+            playBtn: document.getElementById('btn-play-pause'),
+            muteBtn: document.getElementById('btn-mute')
         };
 
         const log = (msg, type = "info") => {
@@ -619,6 +621,17 @@
                 els.audio.pause();
                 els.playBtn.innerText = "播放";
                 log("背景音樂已暫停 (保活能力將下降)。", "warn");
+            }
+        }
+
+        function toggleMute() {
+            els.audio.muted = !els.audio.muted;
+            if (els.audio.muted) {
+                els.muteBtn.innerText = "🔇 恢復";
+                els.muteBtn.style.background = "#ffcccc";
+            } else {
+                els.muteBtn.innerText = "🔊 靜音";
+                els.muteBtn.style.background = "";
             }
         }
 
@@ -790,6 +803,7 @@
             peer.on('error', (err) => {
                 setLoading(false);
                 log(`網關錯誤: ${err.type}`, "error");
+                if (err.type === 'peer-unavailable') alert("連線錯誤，請重試。");
             });
         }
 
@@ -802,7 +816,7 @@
                 els.connPanel.style.display = "none";
                 els.btnReset.style.display = "inline-flex";
                 window.location.hash = fullMyId;
-                log("房間已建立。", "success");
+                log("房間已建立。您現在是房主。", "success");
                 refreshParticipantList();
             });
         }
@@ -816,9 +830,15 @@
                 const conn = peer.connect(targetId, { reliable: true });
                 setupConnection(conn);
                 conn.on('open', () => {
-                    log(`已連接，申請加入...`, "info");
+                    log(`已連接房主，申請加入...`, "info");;
                     conn.send({ type: 'JOIN', nick: myNick });
                 });
+                setTimeout(() => {
+                    if (els.load.style.display === 'flex' && !Object.values(connections).length) {
+                        setLoading(false);
+                        log("連線申請超時。", "error");
+                    }
+                }, 10000);
             });
         }
 
@@ -830,11 +850,14 @@
             conn.on('close', () => {
                 const user = connections[conn.peer];
                 if (user) {
-                    log(`${user.nick} 離開了。`, "warn");
+                    log(`成員離開: ${user.nick}`, "warn");
                     removeUserMarkers(user.nick);
                     delete connections[conn.peer];
                     refreshParticipantList();
                 }
+            });
+            conn.on('error', (err) => {
+                log(`通道衝突: ${err}`, "error");
             });
         }
 
@@ -974,7 +997,10 @@
                     item.v = 0; item.owner = null;
                 } else return log("無法取消他人標記。", "warn");
             } else {
-                if (item.owner && item.owner !== myNick) return log(`已被佔用。`, "warn");
+                if (item.owner && item.owner !== myNick) {
+                    log(`該格已被 ${item.owner} 標記。`, "warn");
+                    return;
+                }
                 for (let i = 0; i < 4; i++) {
                     if (mapData[f][i].owner === myNick) {
                         syncMsg({ type: 'SYNC', f, d: i, v: 0, owner: null });
