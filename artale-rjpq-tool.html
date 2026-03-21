@@ -873,7 +873,7 @@
                     return;
                 }
                 connections[conn.peer] = { conn, nick: data.nick };
-                log(`歡迎: ${data.nick}`, "success");
+                log(`歡迎成員: ${data.nick}`, "success");
                 const fullList = getFullNickList();
                 broadcast({ type: 'NICK_LIST', users: fullList });
                 conn.send({ type: 'WELCOME', state: mapData, users: fullList });
@@ -882,7 +882,7 @@
                 setLoading(false);
                 isHost = false;
                 connections[conn.peer] = { conn, nick: "房主" };
-                mapData = data.state;
+                mapData = JSON.parse(JSON.stringify(data.state));
                 for (let f = 0; f < 10; f++) for (let d = 0; d < 4; d++) updateDoorUI(f, d);
                 log(`成功加入房間！`, "success");
                 els.btnLeave.style.display = "inline-flex";
