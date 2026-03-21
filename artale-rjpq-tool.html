@@ -8,6 +8,7 @@
     <meta property="og:description" content="Xinooo" />
     <meta property="og:url" content="https://xinooo.github.io/artale-rjpq-tool/artale-rjpq-tool.html" />
     <title>Artale RJPQ - 輔助工具</title>
+    <!-- 使用 PeerJS 進行 P2P 連線 -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
@@ -99,6 +100,33 @@
             align-items: center;
             color: #444;
             text-shadow: 1px 1px 0 #fff;
+        }
+
+        /* 音樂播放器樣式 */
+        .music-player {
+            background: #f0f4f8;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .music-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .music-info {
+            font-size: 11px;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
         }
 
         .nickname-box {
@@ -410,7 +438,8 @@
 </head>
 
 <body>
-    <audio id="keep-alive-audio" loop playsinline src="data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//MUZAAAAAGkAAAAAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//MUZBAAAAGkAAAAAAAAA0gAAAAAVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"></audio>
+    <!-- [保活元件] 音訊與畫布 -->
+    <audio id="keep-alive-audio" loop playsinline></audio>
     <canvas id="keep-alive-canvas" width="1" height="1" style="display:none"></canvas>
 
     <div class="container">
@@ -420,7 +449,7 @@
         </div>
 
         <div class="header">
-            <span class="title">Romeo and Juliet Party Quest 輔助工具</span>
+            <span class="title">RJPQ 輔助工具 - 音樂保活版</span>
             <span class="guild">摳底偷來的</span>
         </div>
 
@@ -435,6 +464,17 @@
                         <button class="ms-btn" onclick="copyInvite()" id="btn-copy" style="display: none;">邀請連結</button>
                         <button class="ms-btn" onclick="leaveRoom()" id="btn-leave"
                             style="display: none; background: #ffcccc;">離開</button>
+                    </div>
+                </div>
+
+                <!-- 音樂播放器面板 (已精簡) -->
+                <div class="music-player" id="music-player-panel">
+                    <div class="panel-label" style="margin-bottom: 2px;">
+                        <span>🎵 背景音樂 (保活模式)</span>
+                    </div>
+                    <div class="music-controls">
+                        <button class="ms-btn" id="btn-play-pause" onclick="toggleMusic()" style="font-size: 10px; padding: 4px 8px;">暫停</button>
+                        <div class="music-info" id="music-title">正在播放: 抒情鋼琴曲</div>
                     </div>
                 </div>
 
@@ -458,7 +498,8 @@
                     <span>👥 房間成員</span>
                 </div>
                 <div class="participant-list" id="participant-list">
-                    </div>
+                    <!-- 成員標籤 -->
+                </div>
 
                 <div class="log-section">
                     <div class="log-header" onclick="toggleLog()">
@@ -472,7 +513,8 @@
             </div>
 
             <div class="map-area" id="map-grid">
-                </div>
+                <!-- 由 JS 渲染 -->
+            </div>
 
             <div class="footer-tools">
                 <button class="ms-btn" id="btn-reset-all" style="flex: 1; border-color: #e57373; display: none;"
@@ -481,9 +523,7 @@
             </div>
 
             <div class="instructions">
-                🕹️ <b>電腦</b>: 點擊 => 正確標記 / 右鍵 => 死路 (只有自己能看到)<br>
-                📱 <b>手機</b>: 點擊 => 正確標記 / 雙擊標記 => 死路 (只有自己能看到)<br>
-                📢 <b>注意</b>: 已啟用三重背景保活機制，縮小視窗後仍會嘗試維持連線。
+                ⚠️ <b>保活技巧</b>：音樂正在播放時，系統會給予最高存活權限。若想在背景使用其它 APP，請勿將音樂暫停。
             </div>
         </div>
     </div>
@@ -494,13 +534,15 @@
         let myNick = "";
         let isHost = false;
         let fullMyId = "";
-        let connections = {}; // { peerId: { conn, nick } }
+        let connections = {};
         let mapData = Array(10).fill().map(() => Array(4).fill().map(() => ({ v: 0, owner: null })));
         
-        // 保活相關變數
         let wakeLock = null;
         let pingInterval = null;
         let isCanvasLooping = false;
+        
+        // 音樂列表 (改為穩定的 mp3 格式抒情鋼琴曲，避開防盜鏈限制)
+        const defaultBGM = "https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3";
 
         const els = {
             load: document.getElementById('loading'),
@@ -520,10 +562,13 @@
             btnLeave: document.getElementById('btn-leave'),
             initActions: document.getElementById('init-actions'),
             joinRow: document.getElementById('join-row'),
-            connPanel: document.getElementById('conn-panel')
+            connPanel: document.getElementById('conn-panel'),
+            audio: document.getElementById('keep-alive-audio'),
+            musicPanel: document.getElementById('music-player-panel'),
+            musicTitle: document.getElementById('music-title'),
+            playBtn: document.getElementById('btn-play-pause')
         };
 
-        // === 工具函式 ===
         const log = (msg, type = "info") => {
             const entry = document.createElement("div");
             entry.className = `log-entry log-${type}`;
@@ -551,26 +596,42 @@
             return `hsl(${h}, 70%, 45%)`;
         };
 
-        // === 核心：三重背景保活機制 ===
+        // --- 音樂控制器功能 (移除自訂與音量調整) ---
+        function toggleMusic() {
+            if (els.audio.paused) {
+                els.audio.play();
+                els.playBtn.innerText = "暫停";
+                log("背景音樂已恢復播放。", "info");
+            } else {
+                els.audio.pause();
+                els.playBtn.innerText = "播放";
+                log("背景音樂已暫停 (保活能力將下降)。", "warn");
+            }
+        }
+
+        // --- 三重背景保活核心 ---
         async function startAntiSleep() {
-            // 1. 螢幕鎖定 (Wake Lock) - 防止閒置休眠
+            // 1. Wake Lock
             try {
                 if ('wakeLock' in navigator) {
                     wakeLock = await navigator.wakeLock.request('screen');
                 }
             } catch (err) {}
 
-            // 2. 音頻保活 (Audio Keep-alive) - 欺騙系統為播放器
+            // 2. 音頻保活 (抒情鋼琴曲)
             try {
-                const audio = document.getElementById('keep-alive-audio');
-                audio.volume = 0.01;
-                await audio.play();
-                log("背景連線保護已啟用。", "success");
+                if (!els.audio.src) {
+                    els.audio.src = defaultBGM;
+                }
+                els.audio.volume = 0.3; // 預設固定適中音量
+                await els.audio.play();
+                els.musicPanel.style.display = "flex";
+                log("音樂播放保活機制已啟動。", "success");
             } catch (err) {
-                console.warn("Audio保活啟動受阻，需使用者互動", err);
+                console.warn("音訊啟動受阻，需使用者互動", err);
             }
 
-            // 3. 視覺渲染循環 (Canvas Loop) - 防止 JavaScript 進入深度凍結
+            // 3. Canvas Loop
             if (!isCanvasLooping) {
                 isCanvasLooping = true;
                 const cvs = document.getElementById('keep-alive-canvas');
@@ -578,7 +639,7 @@
                 function keepAliveLoop() {
                     if (!isCanvasLooping) return;
                     ctx.clearRect(0, 0, 1, 1);
-                    ctx.fillRect(0, 0, 1, 1); // 持續進行微小渲染動作
+                    ctx.fillRect(0, 0, 1, 1);
                     requestAnimationFrame(keepAliveLoop);
                 }
                 keepAliveLoop();
@@ -589,13 +650,12 @@
             if (wakeLock) {
                 wakeLock.release().then(() => wakeLock = null);
             }
-            const audio = document.getElementById('keep-alive-audio');
-            audio.pause();
+            els.audio.pause();
+            els.musicPanel.style.display = "none";
             isCanvasLooping = false;
             if (pingInterval) clearInterval(pingInterval);
         }
 
-        // === 暱稱與控制項 ===
         function saveNick() {
             let val = els.nickInput.value.trim();
             if (val === "") {
@@ -614,9 +674,6 @@
             els.initActions.style.display = "flex";
             els.joinRow.style.display = "flex";
             log(`暱稱已設定為: ${myNick}`, "success");
-            
-            // 使用者點擊確定時，啟動保活
-            startAntiSleep();
             
             refreshParticipantList();
         }
@@ -656,11 +713,14 @@
 
         function reconnectCleanly() {
             window.location.hash = "";
-            history.replaceState("", document.title, window.location.pathname);
+            try {
+                history.replaceState("", document.title, window.location.pathname);
+            } catch (e) {
+                console.warn("無法修改 History State:", e);
+            }
             location.reload();
         }
 
-        // === PeerJS 核心邏輯 ===
         function initPeer(onReady) {
             if (peer) return onReady();
             setLoading(true, "建立 P2P 網關...");
@@ -699,7 +759,6 @@
                 setLoading(false);
                 onReady();
                 
-                // 強制 PING 循環維持通道
                 if (pingInterval) clearInterval(pingInterval);
                 pingInterval = setInterval(() => {
                     broadcast({ type: 'PING' });
@@ -707,7 +766,7 @@
                         const hostConn = Object.values(connections).find(c => c.nick === "房主");
                         if (hostConn && hostConn.conn.open) hostConn.conn.send({ type: 'PING' });
                     }
-                }, 2000);
+                }, 1500); 
             });
 
             peer.on('connection', (conn) => {
@@ -717,11 +776,11 @@
             peer.on('error', (err) => {
                 setLoading(false);
                 log(`網關錯誤: ${err.type}`, "error");
-                if (err.type === 'peer-unavailable') alert("連線錯誤，請重試。");
             });
         }
 
         function startHost() {
+            startAntiSleep();
             initPeer(() => {
                 isHost = true;
                 els.btnCopy.style.display = "inline-flex";
@@ -729,7 +788,7 @@
                 els.connPanel.style.display = "none";
                 els.btnReset.style.display = "inline-flex";
                 window.location.hash = fullMyId;
-                log("已建立房間。您現在是房主。", "success");
+                log("房間已建立。", "success");
                 refreshParticipantList();
             });
         }
@@ -737,20 +796,15 @@
         function startJoin() {
             const targetId = els.joinInput.value.trim();
             if (!targetId) return alert("請貼上房號");
+            startAntiSleep();
             initPeer(() => {
-                setLoading(true, "正式接入中...");
+                setLoading(true, "連線中...");
                 const conn = peer.connect(targetId, { reliable: true });
                 setupConnection(conn);
                 conn.on('open', () => {
-                    log(`已連接房主，申請加入...`, "info");
+                    log(`已連接，申請加入...`, "info");
                     conn.send({ type: 'JOIN', nick: myNick });
                 });
-                setTimeout(() => {
-                    if (els.load.style.display === 'flex' && !Object.values(connections).length) {
-                        setLoading(false);
-                        log("連線申請超時。", "error");
-                    }
-                }, 10000);
             });
         }
 
@@ -762,17 +816,11 @@
             conn.on('close', () => {
                 const user = connections[conn.peer];
                 if (user) {
-                    log(`成員離開: ${user.nick}`, "warn");
+                    log(`${user.nick} 離開了。`, "warn");
                     removeUserMarkers(user.nick);
                     delete connections[conn.peer];
                     refreshParticipantList();
-                    if (isHost) {
-                        broadcast({ type: 'NICK_LIST', users: getFullNickList() });
-                    }
                 }
-            });
-            conn.on('error', (err) => {
-                log(`通道衝突: ${err}`, "error");
             });
         }
 
@@ -788,42 +836,26 @@
                     return;
                 }
                 connections[conn.peer] = { conn, nick: data.nick };
-                log(`歡迎成員: ${data.nick}`, "success");
+                log(`歡迎: ${data.nick}`, "success");
                 const fullList = getFullNickList();
                 broadcast({ type: 'NICK_LIST', users: fullList });
-                const currentState = JSON.parse(JSON.stringify(mapData));
-                conn.send({ type: 'WELCOME', state: currentState, users: fullList });
+                conn.send({ type: 'WELCOME', state: mapData, users: fullList });
                 refreshParticipantList();
             } else if (data.type === 'WELCOME') {
                 setLoading(false);
                 isHost = false;
                 connections[conn.peer] = { conn, nick: "房主" };
-                mapData = JSON.parse(JSON.stringify(data.state));
+                mapData = data.state;
                 for (let f = 0; f < 10; f++) for (let d = 0; d < 4; d++) updateDoorUI(f, d);
-                log(`進入房間成功！`, "success");
+                log(`成功加入房間！`, "success");
                 els.btnLeave.style.display = "inline-flex";
                 els.connPanel.style.display = "none";
-                els.joinInput.value = "";
-                history.replaceState(null, document.title, window.location.pathname);
                 updateParticipantListFromWelcome(data.users);
             } else if (data.type === 'NICK_LIST') {
                 updateParticipantListFromWelcome(data.users);
-            } else if (data.type === 'REJECT') {
-                setLoading(false);
-                alert(data.reason);
-                conn.close();
             } else if (data.type === 'SYNC') {
                 mapData[data.f][data.d].v = data.v;
                 mapData[data.f][data.d].owner = data.owner;
-                if (data.v === 1) {
-                    for (let d = 0; d < 4; d++) {
-                        if (d !== data.d && mapData[data.f][d].owner === data.owner) {
-                            mapData[data.f][d].v = 0;
-                            mapData[data.f][d].owner = null;
-                            updateDoorUI(data.f, d);
-                        }
-                    }
-                }
                 updateDoorUI(data.f, data.d);
                 if (isHost) broadcast(data, conn);
             } else if (data.type === 'RESET') {
@@ -879,12 +911,9 @@
 
         function copyInvite() {
             const url = window.location.origin + window.location.pathname + "#" + fullMyId;
-            navigator.clipboard.writeText(url).then(() => {
-                alert("連結已複製！");
-            });
+            navigator.clipboard.writeText(url).then(() => alert("連結已複製！"));
         }
 
-        // === 地圖邏輯 ===
         function renderGrid() {
             els.grid.innerHTML = "";
             for (let f = 0; f < 10; f++) {
@@ -914,13 +943,8 @@
                         lastTouchTime = now;
                     }, { passive: false });
 
-                    door.onclick = (e) => {
-                        onDoorClick(f, d);
-                    };
-                    door.oncontextmenu = (e) => {
-                        e.preventDefault();
-                        onDoorRightClick(f, d);
-                    };
+                    door.onclick = () => onDoorClick(f, d);
+                    door.oncontextmenu = (e) => { e.preventDefault(); onDoorRightClick(f, d); };
                     doors.appendChild(door);
                 }
                 floor.appendChild(doors);
@@ -933,28 +957,18 @@
             const item = mapData[f][d];
             if (item.v === 1) {
                 if (item.owner === myNick || isHost) {
-                    item.v = 0;
-                    item.owner = null;
-                } else {
-                    log("無法取消他人的標記。", "warn");
-                    return;
-                }
+                    item.v = 0; item.owner = null;
+                } else return log("無法取消他人標記。", "warn");
             } else {
-                if (item.owner && item.owner !== myNick) {
-                    log(`該格已被 ${item.owner} 標記。`, "warn");
-                    return;
-                }
+                if (item.owner && item.owner !== myNick) return log(`已被佔用。`, "warn");
                 for (let i = 0; i < 4; i++) {
                     if (mapData[f][i].owner === myNick) {
-                        const oldMsg = { type: 'SYNC', f, d: i, v: 0, owner: null };
-                        syncMsg(oldMsg);
-                        mapData[f][i].v = 0;
-                        mapData[f][i].owner = null;
+                        syncMsg({ type: 'SYNC', f, d: i, v: 0, owner: null });
+                        mapData[f][i].v = 0; mapData[f][i].owner = null;
                         updateDoorUI(f, i);
                     }
                 }
-                item.v = 1;
-                item.owner = myNick;
+                item.v = 1; item.owner = myNick;
             }
             updateDoorUI(f, d);
             syncMsg({ type: 'SYNC', f, d, v: item.v, owner: item.owner });
@@ -970,9 +984,8 @@
 
         function onDoorRightClick(f, d) {
             const el = document.getElementById(`d-${f}-${d}`);
-            if (el.classList.contains('state-error')) {
-                el.classList.remove('state-error');
-            } else {
+            if (el.classList.contains('state-error')) el.classList.remove('state-error');
+            else {
                 if (el.classList.contains('state-pass')) return;
                 el.classList.add('state-error');
             }
@@ -1005,25 +1018,19 @@
 
         function clearLocal() {
             for (let f = 0; f < 10; f++) for (let d = 0; d < 4; d++) {
-                mapData[f][d].v = 0;
-                mapData[f][d].owner = null;
+                mapData[f][d].v = 0; mapData[f][d].owner = null;
                 const el = document.getElementById(`d-${f}-${d}`);
-                if (el) {
-                    el.classList.remove('state-pass', 'state-error');
-                    el.style.removeProperty('--marker-color');
-                }
+                if (el) el.classList.remove('state-pass', 'state-error');
             }
         }
 
-        // === 啟動 ===
         renderGrid();
         const initialHash = window.location.hash.substring(1);
         if (initialHash) {
             els.joinInput.value = initialHash;
-            log("網址檢測到房號，請設定暱稱後加入。", "warn");
+            log("偵測到房號，設定暱稱後即可加入。", "warn");
         }
 
-        // 背景切回前景自動恢復保活
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && myNick !== "") {
                 if ('wakeLock' in navigator && wakeLock === null) {
