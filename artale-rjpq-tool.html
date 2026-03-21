@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta property="og:title" content="Artale RJPQ - 輔助工具" />
-    <meta property="og:description" content="Xinooo" />
-    <meta property="og:url" content="https://xinooo.github.io/artale-rjpq-tool/artale-rjpq-tool.html" />
+    <meta property="og:description" content="函函小仙女" />
+    <meta property="og:url" content="https://hanying602.github.io/artale-rjpq-tool-/index.html" />
     <title>Artale RJPQ - 輔助工具</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
@@ -410,9 +410,8 @@
 </head>
 
 <body>
-    <!-- [新增] 隱藏的無聲音樂播放器，用來欺騙手機系統不要在背景休眠 -->
-    <!-- 這是一段極短且完全無聲的 base64 MP3 音檔 -->
     <audio id="keep-alive-audio" loop playsinline src="data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//MUZAAAAAGkAAAAAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//MUZBAAAAGkAAAAAAAAA0gAAAAAVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"></audio>
+    <canvas id="keep-alive-canvas" width="1" height="1" style="display:none"></canvas>
 
     <div class="container">
         <div id="loading">
@@ -422,7 +421,7 @@
 
         <div class="header">
             <span class="title">Romeo and Juliet Party Quest 輔助工具</span>
-            <span class="guild">摳底偷來的</span>
+            <span class="guild">函函偷來的</span>
         </div>
 
         <div class="content">
@@ -459,8 +458,7 @@
                     <span>👥 房間成員</span>
                 </div>
                 <div class="participant-list" id="participant-list">
-                    <!-- 成員標籤 -->
-                </div>
+                    </div>
 
                 <div class="log-section">
                     <div class="log-header" onclick="toggleLog()">
@@ -474,8 +472,7 @@
             </div>
 
             <div class="map-area" id="map-grid">
-                <!-- 由 JS 渲染 -->
-            </div>
+                </div>
 
             <div class="footer-tools">
                 <button class="ms-btn" id="btn-reset-all" style="flex: 1; border-color: #e57373; display: none;"
@@ -486,8 +483,7 @@
             <div class="instructions">
                 🕹️ <b>電腦</b>: 點擊 => 正確標記 / 右鍵 => 死路 (只有自己能看到)<br>
                 📱 <b>手機</b>: 點擊 => 正確標記 / 雙擊標記 => 死路 (只有自己能看到)<br>
-                ⚠️ <b>規則</b>: 每人在每層限標一格。其他人不能重複標記已佔用位置。<br>
-                📢 <b>注意</b>: 已啟用背景保持連線機制，切換APP暫時不會斷線。
+                📢 <b>注意</b>: 已啟用三重背景保活機制，縮小視窗後仍會嘗試維持連線。
             </div>
         </div>
     </div>
@@ -501,9 +497,10 @@
         let connections = {}; // { peerId: { conn, nick } }
         let mapData = Array(10).fill().map(() => Array(4).fill().map(() => ({ v: 0, owner: null })));
         
-        // 螢幕喚醒鎖定變數 (保持前景不休眠)
+        // 保活相關變數
         let wakeLock = null;
         let pingInterval = null;
+        let isCanvasLooping = false;
 
         const els = {
             load: document.getElementById('loading'),
@@ -554,33 +551,47 @@
             return `hsl(${h}, 70%, 45%)`;
         };
 
-        // === [核心修改] 啟動防休眠機制 ===
+        // === 核心：三重背景保活機制 ===
         async function startAntiSleep() {
-            // 1. 螢幕常亮 (限於前景時生效)
+            // 1. 螢幕鎖定 (Wake Lock) - 防止閒置休眠
             try {
                 if ('wakeLock' in navigator) {
                     wakeLock = await navigator.wakeLock.request('screen');
                 }
-            } catch (err) { }
+            } catch (err) {}
 
-            // 2. 無聲音樂循環播放 (欺騙手機系統，讓網頁在背景繼續執行 JS 與網路連線)
+            // 2. 音頻保活 (Audio Keep-alive) - 欺騙系統為播放器
             try {
                 const audio = document.getElementById('keep-alive-audio');
-                audio.volume = 0.01; // 確保幾乎無聲
-                audio.play();
-                log("背景保活機制已啟動。", "success");
+                audio.volume = 0.01;
+                await audio.play();
+                log("背景連線保護已啟用。", "success");
             } catch (err) {
-                console.warn("Audio Keep-alive failed:", err);
+                console.warn("Audio保活啟動受阻，需使用者互動", err);
+            }
+
+            // 3. 視覺渲染循環 (Canvas Loop) - 防止 JavaScript 進入深度凍結
+            if (!isCanvasLooping) {
+                isCanvasLooping = true;
+                const cvs = document.getElementById('keep-alive-canvas');
+                const ctx = cvs.getContext('2d');
+                function keepAliveLoop() {
+                    if (!isCanvasLooping) return;
+                    ctx.clearRect(0, 0, 1, 1);
+                    ctx.fillRect(0, 0, 1, 1); // 持續進行微小渲染動作
+                    requestAnimationFrame(keepAliveLoop);
+                }
+                keepAliveLoop();
             }
         }
 
-        // 停止防休眠機制
         function stopAntiSleep() {
             if (wakeLock) {
                 wakeLock.release().then(() => wakeLock = null);
             }
             const audio = document.getElementById('keep-alive-audio');
             audio.pause();
+            isCanvasLooping = false;
             if (pingInterval) clearInterval(pingInterval);
         }
 
@@ -604,7 +615,7 @@
             els.joinRow.style.display = "flex";
             log(`暱稱已設定為: ${myNick}`, "success");
             
-            // 使用者有互動行為了，立即啟動防休眠機制
+            // 使用者點擊確定時，啟動保活
             startAntiSleep();
             
             refreshParticipantList();
@@ -688,7 +699,7 @@
                 setLoading(false);
                 onReady();
                 
-                // 啟動 PING 機制：每 2.5 秒送一個無意義封包，維持 P2P 通道熱度
+                // 強制 PING 循環維持通道
                 if (pingInterval) clearInterval(pingInterval);
                 pingInterval = setInterval(() => {
                     broadcast({ type: 'PING' });
@@ -696,7 +707,7 @@
                         const hostConn = Object.values(connections).find(c => c.nick === "房主");
                         if (hostConn && hostConn.conn.open) hostConn.conn.send({ type: 'PING' });
                     }
-                }, 2500);
+                }, 2000);
             });
 
             peer.on('connection', (conn) => {
@@ -766,7 +777,7 @@
         }
 
         function handleP2PMessage(conn, data) {
-            if (data.type === 'PING') return; // 略過 PING 封包
+            if (data.type === 'PING') return;
             
             if (data.type === 'JOIN') {
                 if (!isHost) return;
@@ -1012,7 +1023,7 @@
             log("網址檢測到房號，請設定暱稱後加入。", "warn");
         }
 
-        // 當網頁從背景切回前景時，檢查並重新要回螢幕鎖定
+        // 背景切回前景自動恢復保活
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && myNick !== "") {
                 if ('wakeLock' in navigator && wakeLock === null) {
