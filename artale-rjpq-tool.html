@@ -876,7 +876,8 @@
                 log(`歡迎成員: ${data.nick}`, "success");
                 const fullList = getFullNickList();
                 broadcast({ type: 'NICK_LIST', users: fullList });
-                conn.send({ type: 'WELCOME', state: mapData, users: fullList });
+                const currentState = JSON.parse(JSON.stringify(mapData));
+                conn.send({ type: 'WELCOME', state: currentState, users: fullList });
                 refreshParticipantList();
             } else if (data.type === 'WELCOME') {
                 setLoading(false);
@@ -884,15 +885,30 @@
                 connections[conn.peer] = { conn, nick: "房主" };
                 mapData = JSON.parse(JSON.stringify(data.state));
                 for (let f = 0; f < 10; f++) for (let d = 0; d < 4; d++) updateDoorUI(f, d);
-                log(`成功加入房間！`, "success");
+                log(`進入房間成功！`, "success");
                 els.btnLeave.style.display = "inline-flex";
                 els.connPanel.style.display = "none";
+                els.joinInput.value = "";
+                history.replaceState(null, document.title, window.location.pathname);
                 updateParticipantListFromWelcome(data.users);
             } else if (data.type === 'NICK_LIST') {
                 updateParticipantListFromWelcome(data.users);
+            } else if (data.type === 'REJECT') {
+                setLoading(false);
+                alert(data.reason);
+                conn.close();
             } else if (data.type === 'SYNC') {
                 mapData[data.f][data.d].v = data.v;
                 mapData[data.f][data.d].owner = data.owner;
+                if (data.v === 1) {
+                    for (let d = 0; d < 4; d++) {
+                        if (d !== data.d && mapData[data.f][d].owner === data.owner) {
+                            mapData[data.f][d].v = 0;
+                            mapData[data.f][d].owner = null;
+                            updateDoorUI(data.f, d);
+                        }
+                    }
+                }
                 updateDoorUI(data.f, data.d);
                 if (isHost) broadcast(data, conn);
             } else if (data.type === 'RESET') {
@@ -1058,9 +1074,13 @@
 
         function clearLocal() {
             for (let f = 0; f < 10; f++) for (let d = 0; d < 4; d++) {
-                mapData[f][d].v = 0; mapData[f][d].owner = null;
+                mapData[f][d].v = 0;
+                mapData[f][d].owner = null;
                 const el = document.getElementById(`d-${f}-${d}`);
-                if (el) el.classList.remove('state-pass', 'state-error');
+                if (el) {
+                    el.classList.remove('state-pass', 'state-error');
+                    el.style.removeProperty('--marker-color');
+                }
             }
         }
 
