@@ -224,9 +224,12 @@
             }
         }
 
+        /* 確保不論電腦或手機，按下的瞬間都有視覺顏色回饋 */
         .ms-btn:active:not(:disabled) {
             transform: translate(1px, 1px);
             box-shadow: none;
+            background: var(--ms-btn-hover-gradient);
+            border-color: #775500;
         }
 
         .ms-btn.primary {
@@ -340,9 +343,12 @@
             position: relative;
         }
 
+        /* 確保不論電腦或手機，按下的瞬間都有視覺顏色回饋 */
         .door:active {
             border-bottom-width: 2px;
             transform: translateY(2px);
+            border-color: #333;
+            background: #fff;
         }
 
         .door.state-pass {
