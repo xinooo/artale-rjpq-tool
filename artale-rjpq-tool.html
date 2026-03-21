@@ -7,6 +7,7 @@
     <meta property="og:title" content="Artale RJPQ - 輔助工具" />
     <meta property="og:description" content="Xinooo" />
     <meta property="og:url" content="https://xinooo.github.io/artale-rjpq-tool/artale-rjpq-tool.html" />
+    <meta property="og:image" content="https://xinooo.github.io/artale-rjpq-tool/Juliet.png" />
     <title>Artale RJPQ - 輔助工具</title>
     <!-- 使用 PeerJS 進行 P2P 連線 -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -474,7 +475,7 @@
                     </div>
                     <div class="music-controls">
                         <button class="ms-btn" id="btn-play-pause" onclick="toggleMusic()" style="font-size: 10px; padding: 4px 8px;">暫停</button>
-                        <div class="music-info" id="music-title">正在播放: 抒情鋼琴曲</div>
+                        <div class="music-info" id="music-title">正在播放: 納希沙漠 - 瑪迦迪亞城</div>
                     </div>
                 </div>
 
@@ -523,6 +524,10 @@
             </div>
 
             <div class="instructions">
+                🕹️ <b>電腦</b>: 點擊 => 正確標記 / 右鍵 => 死路 (只有自己能看到)<br>
+                📱 <b>手機</b>: 點擊 => 正確標記 / 雙擊標記 => 死路 (只有自己能看到)<br>
+                ⚠️ <b>規則</b>: 每人在每層限標一格。其他人不能重複標記已佔用位置。<br>
+                📢 <b>注意</b>: 已啟用背景保持連線機制，切換APP暫時不會斷線。<br>
                 ⚠️ <b>保活技巧</b>：音樂正在播放時，系統會給予最高存活權限。若想在背景使用其它 APP，請勿將音樂暫停。
             </div>
         </div>
@@ -541,8 +546,7 @@
         let pingInterval = null;
         let isCanvasLooping = false;
         
-        // 音樂列表 (改為穩定的 mp3 格式抒情鋼琴曲，避開防盜鏈限制)
-        const defaultBGM = "https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3";
+        const defaultBGM = "https://msbgm.adian.site/bgm/Bgm12/Dispute.mp3";
 
         const els = {
             load: document.getElementById('loading'),
@@ -625,6 +629,7 @@
                 }
                 els.audio.volume = 0.3; // 預設固定適中音量
                 await els.audio.play();
+                els.playBtn.innerText = "暫停";
                 els.musicPanel.style.display = "flex";
                 log("音樂播放保活機制已啟動。", "success");
             } catch (err) {
