@@ -850,12 +850,13 @@
             conn.on('close', () => {
                 const user = connections[conn.peer];
                 if (user) {
-                    log(`成員離開: ${user.nick}`, "warn");
-                    removeUserMarkers(user.nick);
+                    const leftNick = user.nick;
+                    log(`成員離開: ${leftNick}`, "warn");
+                    removeUserMarkers(leftNick);
                     delete connections[conn.peer];
                     refreshParticipantList();
                     if (isHost) {
-                        broadcast({ type: 'NICK_LIST', users: getFullNickList() });
+                        broadcast({ type: 'USER_LEFT', nick: leftNick, users: getFullNickList() });
                     }
                 }
             });
@@ -895,6 +896,11 @@
                 history.replaceState(null, document.title, window.location.pathname);
                 updateParticipantListFromWelcome(data.users);
             } else if (data.type === 'NICK_LIST') {
+                updateParticipantListFromWelcome(data.users);
+            } else if (data.type === 'USER_LEFT') {
+                // 收到房主的通知，執行清除與更新名單
+                log(`成員離開: ${data.nick}`, "warn");
+                removeUserMarkers(data.nick);
                 updateParticipantListFromWelcome(data.users);
             } else if (data.type === 'REJECT') {
                 setLoading(false);
