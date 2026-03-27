@@ -165,10 +165,6 @@
             line-height: 1;
         }
 
-        .kick-btn:hover {
-            background: rgba(255, 0, 0, 0.1);
-        }
-
         .color-picker {
             display: flex;
             gap: 5px;
@@ -241,13 +237,6 @@
             font-size: 14px;
         }
 
-        .help-btn:hover {
-            background: var(--ms-dark-blue);
-            color: #fff;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
-
         .help-btn:active {
             transform: translateY(0);
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -260,6 +249,29 @@
             outline: none;
             font-family: inherit;
         }
+		
+		@media (hover: hover) {
+			.ms-btn:hover:not(:disabled) {
+				background: var(--ms-btn-hover-gradient);
+				border-color: #775500;
+			}
+		
+		    .help-btn:hover {
+				background: var(--ms-dark-blue);
+				color: #fff;
+				transform: translateY(-1px);
+				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+			}
+		
+		    .door:hover {
+				border-color: #333;
+				/* 移除 background: #fff 避免覆蓋標記背景 */
+			}
+		
+			.kick-btn:hover {
+				background: rgba(255, 0, 0, 0.1);
+			}
+		}
 
         .ms-btn {
             background: var(--ms-btn-gradient);
@@ -278,11 +290,6 @@
             white-space: nowrap;
         }
 
-        .ms-btn:hover:not(:disabled) {
-            background: var(--ms-btn-hover-gradient);
-            border-color: #775500;
-        }
-
         .ms-btn:active:not(:disabled) {
             transform: translate(1px, 1px);
             box-shadow: none;
@@ -292,6 +299,13 @@
             background: linear-gradient(to bottom, #77aadd 0%, #336699 100%);
             color: white;
             border-color: #224466;
+            text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5);
+        }
+		
+        .ms-btn.danger {
+            background: linear-gradient(to bottom, #ef5350 0%, #c62828 100%);
+            color: white;
+            border-color: #b71c1c;
             text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5);
         }
 
@@ -466,11 +480,10 @@
 
         /* 標記顏色變深加強對比 */
         .door.state-pass { 
-            background: rgba(var(--marker-color-rgb, 66, 133, 244), 0.35); /* 增加飽和度 */
+            background: rgba(var(--marker-color-rgb, 66, 133, 244)); /* 增加飽和度 */
             border-color: var(--marker-color, #4285f4); 
             box-shadow: inset 0 1px 1px rgba(255,255,255,0.8), inset 0 0 0 1px var(--marker-color, #4285f4);
         }
-        .door.state-error { background: #ffcdd2; border-color: #ef5350; }
 
         /* 死路小點容器 */
         .dead-end-dots {
@@ -485,31 +498,15 @@
             pointer-events: none;
         }
         .dead-dot {
-            width: 8px; /* 加大 */
-            height: 8px;
-            border-radius: 50%;
-            border: 1.5px solid #fff; /* 加粗邊框 */
-            box-shadow: 0 0 2px rgba(0,0,0,0.5);
-        }
-        /* 我自己的死路標記強化顯示 */
-        .door.my-dead { 
-			border: 1.5px solid #ff0000; 
-			background: #ffebee; 
-			box-shadow: inset 0 0 0 1px #ff0000;
-		}
-        .door.my-dead::after {
-            content: "✕";
-            position: absolute;
-            font-size: 20px;
-            color: #d32f2f;
+            font-size: 16px;
             font-weight: bold;
-            opacity: 0.8;
-            pointer-events: none;
-        }
-
-        .door:hover {
-            border-color: #333;
-            /* 移除 background: #fff 避免覆蓋標記背景 */
+            line-height: 1;
+            text-shadow:
+                1px 1px 0 #fff,
+                -1px -1px 0 #fff,
+                1px -1px 0 #fff,
+                -1px 1px 0 #fff,
+                0 1px 2px rgba(0, 0, 0, 0.3);
         }
 
         .door:active {
@@ -560,20 +557,6 @@
 
         .door.state-pass .door-tag {
             display: block;
-        }
-
-        .door.state-error {
-            background: linear-gradient(to bottom, #f5c6cb 0%, #dc3545 100%);
-            border-color: #bd2130;
-        }
-
-        .door.state-error::after {
-            content: "X";
-            color: white;
-            font-weight: bold;
-            font-size: 22px;
-            text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
-            z-index: 2;
         }
 
         .footer-tools {
@@ -703,7 +686,7 @@
                     <div style="display: flex; gap: 8px; margin-bottom: 5px;">
                         <button class="ms-btn primary" id="btn-host" onclick="startHost()" style="flex: 1;" disabled>建立房間</button>
                         <button class="ms-btn" id="btn-copy" onclick="copyInvite()" style="display: none; padding: 0 10px; justify-content: center; align-items: center;" title="邀請連結">邀請連結</button>
-                        <button class="ms-btn" id="btn-leave" onclick="leaveRoom()" style="display: none; flex: 1; background: linear-gradient(to bottom, #ffcccc, #ff9999); color:#cc0000; border-color:#ff9999; font-size: 11px;" title="離開房間">離開房間</button>
+                        <button class="ms-btn danger" id="btn-leave" onclick="leaveRoom()" style="display: none; flex: 1; font-size: 11px" title="離開房間">離開房間</button>
                     </div>
                     <div class="join-box" id="join-row" style="display: flex; gap: 8px;">
                         <input type="text" id="join-id" placeholder="貼上房號 (ID)..." style="flex: 1;">
@@ -730,8 +713,8 @@
                 <!-- 由 JS 渲染 -->
             </div>
 
-            <div class="footer-tools">
-                <button class="ms-btn" id="btn-reset-all" style="flex: 1; border-color: #e57373; display: none;">清空所有標記</button>
+            <div class="footer-tools" style="flex-wrap: wrap; gap: 8px">
+                <button class="ms-btn danger" id="btn-reset-all" style="flex: 1; display: none">清空所有標記</button>
                 <button class="ms-btn" id="btn-reset-settings" onclick="resetSettings()" style="flex: 1;">重置設定</button>
             </div>
 
@@ -767,7 +750,7 @@
                 <h3 style="color: var(--ms-dark-blue); border-bottom: 2px solid #ccc; padding-bottom: 5px;">🎮 核心功能</h3>
                 <ul style="padding-left: 20px;">
                     <li><b>通路標記 (O)</b>：每層僅限標記一格，標記會顯示您的暱稱與顏色。</li>
-                    <li><b>共享死路 (✕)</b>：標記死路會同步給所有隊友。格子內的「彩色小點」代表是誰標記的，而「大紅 ✕」則是您自己的標記。</li>
+                    <li><b>共享死路 (✕)</b>：格子內的「彩色小點」代表是誰標記的死路。若該格同時標記了通路，為避免畫面雜亂，會優先顯示通路並暫時隱藏死路小點。</li>
                     <li><b>實時同步</b>：所有成員的操作（標記、換色、離線）都會即時反映在畫面上。</li>
                 </ul>
 
@@ -1243,10 +1226,7 @@
                     // 清除同層自己的舊 Pass 標記
                     slot.passMarkers = slot.passMarkers.filter(m => m.f !== f);
                     slot.passMarkers.push({ f, d });
-                    // 同時清除該格的自己的 DeadEnd
-                    slot.deadEndMarkers = slot.deadEndMarkers.filter(m => !(m.f === f && m.d === d));
-                    // 房主強權：如果是房主標記，可能要考慮是否允許覆蓋他人？
-                    // 目前逻辑維持：每人各自標記自己的
+                    // 保留該格子的死路標記，以便誤點時取消通路能恢復
                 } else if (mType === 'dead') {
                     slot.deadEndMarkers.push({ f, d });
                     slot.passMarkers = slot.passMarkers.filter(m => !(m.f === f && m.d === d));
@@ -1305,7 +1285,12 @@
                 tag.style.color = s.color;
                 
                 const icon = s.isHost ? "👑 " : "👤 ";
-                tag.innerHTML = icon + s.nick;
+                const isMe = s.index === mySlotIndex ? " (我)" : "";
+                tag.innerHTML = icon + s.nick + isMe;
+                if (s.index === mySlotIndex) {
+                    tag.style.fontWeight = "900";
+                    tag.style.textDecoration = "underline";
+                }
 
                 if (isHost && !s.isHost) {
                     const kBtn = getDoc().createElement("span");
@@ -1485,7 +1470,8 @@
             deadSlots.forEach(s => {
                 const dot = getDoc().createElement('div');
                 dot.className = 'dead-dot';
-                dot.style.backgroundColor = s.color;
+                dot.style.color = s.color;
+                dot.innerText = "✕";
                 dotsContainer.appendChild(dot);
                 if (s.index === mySlotIndex) el.classList.add('my-dead');
             });
@@ -1496,8 +1482,12 @@
                 const rgb = hexToRgb(hslToHex(passSlot.color)) || "66, 133, 244";
                 el.style.setProperty('--marker-color-rgb', rgb);
                 tag.innerText = passSlot.nick;
+                dotsContainer.style.display = "none";
             } else if (deadSlots.length > 0) {
                 el.classList.add('state-error');
+                dotsContainer.style.display = "flex";
+            } else {
+                    dotsContainer.style.display = "flex";
             }
         }
 
@@ -1545,20 +1535,10 @@
                     height: 600,
                 });
 
-                // 複製樣式
-                Array.from(document.styleSheets).forEach((styleSheet) => {
-                    try {
-                        const cssRules = Array.from(styleSheet.cssRules).map((rule) => rule.cssText).join('');
-                        const style = document.createElement('style');
-                        style.textContent = cssRules;
-                        pipWindow.document.head.appendChild(style);
-                    } catch (e) {
-                        const link = document.createElement('link');
-                        link.rel = 'stylesheet';
-                        link.href = styleSheet.href;
-                        pipWindow.document.head.appendChild(link);
-                    }
-                });
+				// 採用 DOM 複製法同步樣式
+				Array.from(document.querySelectorAll("style, link[rel='stylesheet']")).forEach((el) => {
+					pipWindow.document.head.appendChild(el.cloneNode(true));
+				});
 
                 // 移動內容
                 const container = document.querySelector('.container');
