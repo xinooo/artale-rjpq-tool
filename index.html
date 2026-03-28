@@ -1105,17 +1105,18 @@
             conn.on('close', () => {
                 if (isHost) {
                     // 房主檢測到斷線，更新槽位狀態
-                    const slot = gameState.slots.find(s => s && s.peerId === conn.peer);
-                    if (slot) {
-                        slot.connected = false;
-                        log(`成員離線: ${slot.nick}`, "warn");
-                        // 移除標記（依照需求，或者保留）
-                        slot.passMarkers = [];
-                        slot.deadEndMarkers = [];
-                        delete connections[conn.peer];
+                    const slotIndex = gameState.slots.findIndex(s => s && s.peerId === conn.peer);
+					if (slotIndex !== -1) {
+						const slot = gameState.slots[slotIndex];
+						log(`成員離線: ${slot.nick}`, "warn");
+
+						// 【關鍵修改】：完全清空這個位置，讓暱稱釋放出來
+    					gameState.slots[slotIndex] = null;
+
+						delete connections[conn.peer];
                         broadcastState();
                         refreshUI();
-                    }
+					}
                 } else {
                     // 成員檢測到房主斷線
                     if (conn.peer === hostPeerId) {
