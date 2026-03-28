@@ -216,10 +216,6 @@
             margin-bottom: 3px;
         }
 
-        @media (max-width: 768px) {
-            .pip-btn { display: none !important; }
-        }
-
         .help-btn {
             background: #fff;
             border: 2px solid var(--ms-dark-blue);
@@ -881,7 +877,10 @@
             log(`暱稱已設定為: ${myNick}`, "success");
             refreshUI();
 
-            if (window.documentPictureInPicture && !pipWindow) {
+			// 精準判斷是否為手機/行動裝置
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+            if (window.documentPictureInPicture && !pipWindow && !isMobile) {
                 getDoc().getElementById('pip-btn').style.display = 'inline-block';
             }
         }
