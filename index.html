@@ -496,7 +496,7 @@
             pointer-events: none;
         }
         .dead-dot {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: bold;
             line-height: 1;
             text-shadow:
@@ -1485,7 +1485,7 @@
                 const dot = getDoc().createElement('div');
                 dot.className = 'dead-dot';
                 dot.style.color = s.color;
-                dot.innerText = "✕";
+                dot.innerText = "✖";
                 dotsContainer.appendChild(dot);
                 if (s.index === mySlotIndex) el.classList.add('my-dead');
             });
